@@ -60,8 +60,24 @@ class SMTPClient:
 
         client_socket.close()
 
-    def read_email():
-        pass
+
+    def read_email(self, recipient, email_filename):
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect((self.server_host, self.server_port))
+
+        client_socket.send(f"READ EMAIL: {recipient}: {email_filename}\r\n".encode())
+        response = client_socket.recv(1024).decode().strip()
+        print("Server:", response)
+
+        # Keep the connection open until the response is fully received
+        while response:
+            response = client_socket.recv(1024).decode().strip()
+            if response:
+                print("Server:", response)
+                break
+
+        client_socket.close()
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -81,3 +97,16 @@ if __name__ == "__main__":
         message = sys.argv[4]
         filename = sys.argv[5]
         client.send_email(sender, recipient, message, filename)
+
+    elif command == "list" and len(sys.argv) == 3:
+        recipient = sys.argv[2]
+        client.list_emails(recipient)
+
+    elif command == "read" and len(sys.argv) == 4:
+        recipient = sys.argv[2]
+        filename = sys.argv[3]
+        client.read_email(recipient, filename)
+
+    else:
+        print("Invalid command or missing arguments.")
+        sys.exit(1)

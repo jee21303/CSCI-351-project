@@ -10,8 +10,16 @@ class SMTPServer:
         self.port = port
         os.makedirs(MAILBOX_DIR, exist_ok=True)
 
-    def save_email():
-        pass
+    def save_email(self, recipient, sender, message, filename):
+        recipient_dir = os.path.join(MAILBOX_DIR, recipient)
+        os.makedirs(recipient_dir, exist_ok=True)
+
+        email_path = os.path.join(recipient_dir, f"{filename}.txt")
+
+        with open(email_path, "w") as f:
+            f.write(f"From: {sender}\nTo: {recipient}\n\n{message}")
+
+        print(f"Email saved to {email_path}")
 
     def handle_client(self, conn, addr):
         conn.send(b"220 SimpleSMTP Server Ready\r\n")
@@ -73,7 +81,30 @@ class SMTPServer:
                         conn.send(("250 No emails found for " + recipient + "\r\n").encode())
                 else:
                     conn.send(b"500 Error: Recipient mailbox not found\r\n")
-            
+
+            elif data.startswith("READ EMAIL:"):
+                # Extract the recipient and email filename from the command
+                parts = data.split(":")
+                if len(parts) == 3:
+                    recipient = parts[1].strip()
+                    filename = parts[2].strip()
+
+                    recipient_dir = os.path.join(MAILBOX_DIR, recipient)
+                    email_path = os.path.join(recipient_dir, f"{filename}.txt")
+
+                    # Check if the email file exists
+                    if os.path.exists(email_path):
+                        with open(email_path, "r") as f:
+                            email_content = f.read()
+                            # Send the email content back to the client
+                            response = f"250 Email content:\r\n{email_content}\r\n"
+                            conn.send(response.encode())
+                    else:
+                        # If the email file does not exist, notify the client
+                        conn.send(f"500 Error: Email {filename} not found for {recipient}\r\n".encode())
+                else:
+                    conn.send(b"500 Error: Invalid command format for reading email\r\n")
+
             elif data == "QUIT":
                 conn.send(b"221 Bye\r\n")
                 break
