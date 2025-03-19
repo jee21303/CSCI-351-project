@@ -40,8 +40,25 @@ class SMTPClient:
 
         client_socket.close()
 
-    def list_emails():
-        pass
+    def list_emails(self, recipient):
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect((self.server_host, self.server_port))
+
+        # Send LIST EMAILS command
+        client_socket.send(f"LIST EMAILS: {recipient}\r\n".encode())
+
+        # Receive the server's response and print it
+        response = client_socket.recv(1024).decode().strip()
+        print("Server:", response)
+
+        # Keep the connection open until the response is fully received
+        while response:
+            response = client_socket.recv(1024).decode().strip()
+            if response:
+                print("Server:", response)
+                break
+
+        client_socket.close()
 
     def read_email():
         pass

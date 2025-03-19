@@ -60,6 +60,20 @@ class SMTPServer:
                 else:
                     message_data.append(data + "\n")
             
+            elif data.startswith("LIST EMAILS:"):
+                recipient = data.split(":")[1].strip()
+                recipient_dir = os.path.join(MAILBOX_DIR, recipient)
+
+                if os.path.exists(recipient_dir):
+                    emails = os.listdir(recipient_dir)
+                    if emails:
+                        response = "\n".join(emails) + "\r\n"
+                        conn.send(f"250 List of emails for {recipient}:\r\n{response}".encode())
+                    else:
+                        conn.send(("250 No emails found for " + recipient + "\r\n").encode())
+                else:
+                    conn.send(b"500 Error: Recipient mailbox not found\r\n")
+            
             elif data == "QUIT":
                 conn.send(b"221 Bye\r\n")
                 break
